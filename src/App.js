@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { useSpring, animated } from '@react-spring/web';
 import './App.css';
 
 function App() {
@@ -9,8 +10,9 @@ function App() {
   const [time, setTime] = useState('');
   const [instructions, setInstructions] = useState('');
   const [equipment, setEquipment] = useState('');
+  const [triggerAnimation, setTriggerAnimation] = useState(false);
 
-  const exercises = {
+  const exercises = useMemo(() => ({
     '상체': {
       '가슴': {
         exercises: ['푸쉬업', '벤치프레스', '덤벨 프레스'],
@@ -127,7 +129,7 @@ function App() {
             instructions: '1. 바닥에 누워 무릎을 구부리고 발을 바닥에 붙인다. 2. 상체를 들어 올려 복근을 자극한다. 3. 천천히 상체를 원래 위치로 내린다.'
           },
           '플랭크': {
-            description: '몸을 일직선으로 유지하여 복근을 강화합니다.',
+            description: '몸을 일직선으로 유지하여 코어를 강화합니다.',
             equipment: '자유 체중',
             sets: '3세트',
             time: '30초 휴식',
@@ -197,9 +199,15 @@ function App() {
         }
       }
     }
-  };
+  }), []);
 
-  const getRandomExercise = () => {
+  const { opacity, transform } = useSpring({
+    opacity: triggerAnimation ? 1 : 0,
+    transform: triggerAnimation ? 'scale(1)' : 'scale(1.3)',
+    config: { tension: 250, friction: 30 }
+  });
+
+  const getRandomExercise = useCallback(() => {
     const categories = Object.keys(exercises);
     const randomCategory = categories[Math.floor(Math.random() * categories.length)];
     const subExercises = exercises[randomCategory];
@@ -215,14 +223,20 @@ function App() {
     setTime(exerciseInfo.time);
     setInstructions(exerciseInfo.instructions);
     setEquipment(exerciseInfo.equipment);
-  };
+
+    // 애니메이션 트리거
+    setTriggerAnimation(false);
+    setTimeout(() => {
+      setTriggerAnimation(true);
+    }, 10); 
+  }, [exercises]);
 
   return (
     <div className="App">
-      <h1>오늘의 운동 추천</h1>
+      <h1>오늘의 운동은??</h1>
       <button onClick={getRandomExercise}>운동 추천받기</button>
       {recommendation && (
-        <div className="recommendation">
+        <animated.div className="recommendation" style={{ opacity, transform }}>
           <h2>추천 운동 카테고리: {recommendation}</h2>
           <h3>운동: {details}</h3>
           <p><strong>설명:</strong> {info}</p>
@@ -230,7 +244,7 @@ function App() {
           <p><strong>세트 수:</strong> {sets}</p>
           <p><strong>휴식 시간:</strong> {time}</p>
           <p><strong>운동 방법:</strong> {instructions}</p>
-        </div>
+        </animated.div>
       )}
     </div>
   );
